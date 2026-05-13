@@ -308,7 +308,7 @@ class MarketplaceMermas(object):
 
 def iniciar_servidor():
     daemon = Pyro5.api.Daemon(host="127.0.0.1", port=9090) # Forzamos puerto 9090
-    uri = daemon.register(MercadoKomo, "mercado.komo")
+    uri = daemon.register(MarketplaceMermas, "mercado.komo")
     
     # Guardamos la URI en un archivo para que el Gateway la lea
     with open("pyro_uri.txt", "w") as f:
