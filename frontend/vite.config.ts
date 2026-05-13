@@ -49,7 +49,6 @@ export default defineConfig({
       '/api': {
         target: 'https://komo-backend.onrender.com', // ⬅️ Tu nueva URL
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''), // Esto quita el /api antes de enviar al backend
       },
     },
   },

@@ -63,7 +63,7 @@ def get_core_proxy():
     return Pyro5.api.Proxy(URI_PYRO)
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
-app.post("/api/auth/registro")
+@app.post("/api/auth/registro")
 def registrar_usuario(usuario: UsuarioRegistro):
     with get_core_proxy() as s:
         resp = s.registrar_usuario(usuario.nombre, usuario.email, usuario.password, usuario.rol, usuario.direccion, usuario.telefono)
