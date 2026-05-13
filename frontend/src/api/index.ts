@@ -1,8 +1,6 @@
 import type { Oferta, Pedido, DashboardVendedor, Donacion } from '../types'
 
-const BASE = import.meta.env.PROD 
-  ? 'https://komo-backend.onrender.com/api' // En producción va directo al backend
-  : '/api'                                  // En local usa el proxy
+const BASE = 'https://komo-backend.onrender.com/api'                                 // En local usa el proxy
 
 // ── Auth ──────────────────────────────────────────────
 export async function registrar(data: {
