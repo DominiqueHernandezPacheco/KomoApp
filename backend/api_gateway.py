@@ -63,12 +63,15 @@ def get_core_proxy():
     return Pyro5.api.Proxy(URI_PYRO)
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
-@app.post("/api/auth/registro")
+app.post("/api/auth/registro")
 def registrar_usuario(usuario: UsuarioRegistro):
     with get_core_proxy() as s:
         resp = s.registrar_usuario(usuario.nombre, usuario.email, usuario.password, usuario.rol, usuario.direccion, usuario.telefono)
-        if resp["status"] == "error": raise HTTPException(400, resp.get("mensaje", "Error"))
-        return resp
+        if not resp: # Si por alguna razón el Core no devuelve nada
+            return {"status": "error", "mensaje": "Respuesta vacía del servidor"}
+        if resp.get("status") == "error": 
+            raise HTTPException(400, resp.get("mensaje", "Error"))
+        return resp # FastAPI convertirá este dict a JSON automáticamente
 
 @app.post("/api/auth/login")
 def iniciar_sesion(credenciales: UsuarioLogin):
