@@ -228,7 +228,10 @@ export default function MapPage() {
         <div className="grid flex-1 gap-4 p-4 overflow-hidden md:grid-cols-[2fr_1fr]">
           {/* Mapa */}
           <div className="w-full h-[560px] rounded-[32px] overflow-hidden shadow-xl border border-gray-200 bg-white md:h-[760px]">
-            <MapComponent ofertas={filteredOfertas} onOfertaClick={(oferta) => setSelectedOferta(oferta)} />
+            <MapComponent 
+  ofertas={filteredOfertas} 
+  onOfertaClick={(oferta: any) => setSelectedOferta(oferta)} 
+/>
           </div>
 
           {/* Panel lateral con ofertas */}

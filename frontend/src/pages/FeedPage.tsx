@@ -74,7 +74,7 @@ const cargar = async (mostrarCargando = false) => {
               {usuario?.nombre?.split(' ')[0]} 👋
             </p>
           </div>
-          <button onClick={cargar} className="bg-white/20 rounded-full p-2 text-sm active:scale-90 transition">
+          <button onClick={() => cargar(true)} className="bg-white/20 rounded-full p-2 text-sm active:scale-90 transition">
             🔄
           </button>
         </div>
@@ -115,7 +115,7 @@ const cargar = async (mostrarCargando = false) => {
           <div className="pt-20 text-center text-gray-400">
             <p className="text-4xl mb-2">😕</p>
             <p className="text-sm">No hay ofertas disponibles ahora</p>
-            <button onClick={cargar} className="mt-3 text-green-600 text-sm font-semibold">
+            <button onClick={() => cargar(true)} className="mt-3 text-green-600 text-sm font-semibold">
               Recargar
             </button>
           </div>
