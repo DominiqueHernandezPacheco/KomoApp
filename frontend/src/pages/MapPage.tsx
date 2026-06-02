@@ -12,16 +12,16 @@ interface OfertaMapa extends Oferta {
   distancia?: number
 }
 
-// Ciudad de Campeche como centro base
-const BASE_LAT = 19.8313
-const BASE_LNG = -90.5348
-
-// Genera coordenadas deterministas a partir del ID de la oferta
-function coordsDesdeId(id: number): { lat: number; lng: number } {
-  const seed = id * 9301 + 49297
-  const offsetLat = ((seed % 1000) / 1000 - 0.5) * 0.12
-  const offsetLng = (((seed * 31) % 1000) / 1000 - 0.5) * 0.18
-  return { lat: BASE_LAT + offsetLat, lng: BASE_LNG + offsetLng }
+async function geocodificar(direccion: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(direccion)}&format=json&limit=1`
+    const res = await fetch(url, { headers: { 'Accept-Language': 'es' } })
+    const data = await res.json()
+    if (data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+    }
+  } catch { /* dirección no geocodificable */ }
+  return null
 }
 
 function calcularDistancia(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -44,41 +44,65 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true)
   const [reservando, setReservando] = useState(false)
   const [toast, setToast] = useState('')
+  const [geocodificando, setGeocodificando] = useState(false)
 
   useEffect(() => {
     const cargar = async () => {
       try {
-        const data = await getOfertas()
-        const conCoords: OfertaMapa[] = data.map(o => ({
-          ...o,
-          ...coordsDesdeId(o.id_oferta),
-        }))
+        const ofertas = await getOfertas()
+        if (ofertas.length === 0) {
+          setLoading(false)
+          return
+        }
 
+        setGeocodificando(true)
+
+        // Agrupar por dirección para no geocodificar duplicados
+        const cacheCoordenadas: Record<string, { lat: number; lng: number } | null> = {}
+        const direccionesUnicas = [...new Set(ofertas.map(o => o.direccion))]
+
+        for (const dir of direccionesUnicas) {
+          cacheCoordenadas[dir] = await geocodificar(dir)
+          await new Promise(r => setTimeout(r, 250)) // Respetar límite Nominatim
+        }
+
+        const conCoords: OfertaMapa[] = ofertas
+          .filter(o => cacheCoordenadas[o.direccion] !== null)
+          .map(o => ({
+            ...o,
+            lat: cacheCoordenadas[o.direccion]!.lat,
+            lng: cacheCoordenadas[o.direccion]!.lng,
+          }))
+
+        // Calcular distancia si hay geolocalización
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             ({ coords }) => {
-              const { latitude, longitude } = coords
-              const conDistancia = conCoords.map(o => ({
+              const conDist = conCoords.map(o => ({
                 ...o,
-                distancia: calcularDistancia(latitude, longitude, o.lat, o.lng),
+                distancia: calcularDistancia(coords.latitude, coords.longitude, o.lat, o.lng),
               }))
-              setOfertasMapa(conDistancia)
-              setFiltradas(conDistancia.filter(o => o.distancia! <= maxDistancia))
+              setOfertasMapa(conDist)
+              setFiltradas(conDist.filter(o => o.distancia! <= maxDistancia))
+              setGeocodificando(false)
               setLoading(false)
             },
             () => {
               setOfertasMapa(conCoords)
               setFiltradas(conCoords)
+              setGeocodificando(false)
               setLoading(false)
             }
           )
         } else {
           setOfertasMapa(conCoords)
           setFiltradas(conCoords)
+          setGeocodificando(false)
           setLoading(false)
         }
       } catch {
         setLoading(false)
+        setGeocodificando(false)
       }
     }
     cargar()
@@ -107,12 +131,14 @@ export default function MapPage() {
     setTimeout(() => setToast(''), 3500)
   }
 
-  if (loading) {
+  if (loading || geocodificando) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
-          <p className="mt-2 text-gray-600 text-sm">Cargando mapa...</p>
+          <p className="mt-2 text-gray-600 text-sm">
+            {geocodificando ? 'Localizando restaurantes...' : 'Cargando mapa...'}
+          </p>
         </div>
       </div>
     )
@@ -148,7 +174,7 @@ export default function MapPage() {
             />
             <p className="text-xs text-gray-500">
               {filtradas.length} oferta{filtradas.length !== 1 ? 's' : ''} encontrada{filtradas.length !== 1 ? 's' : ''}
-              {ofertasMapa.length > 0 && ` de ${ofertasMapa.length} activas`}
+              {ofertasMapa.length > 0 && ` de ${ofertasMapa.length} localizadas`}
             </p>
           </div>
         </div>
@@ -222,6 +248,7 @@ export default function MapPage() {
                 {selectedOferta.alergenos && (
                   <p className="text-xs text-orange-500 mt-1">⚠️ Alérgenos: {selectedOferta.alergenos}</p>
                 )}
+                <p className="text-xs text-gray-400 mt-1">📍 {selectedOferta.direccion}</p>
 
                 <div className="mt-4 flex items-center justify-between">
                   <div>

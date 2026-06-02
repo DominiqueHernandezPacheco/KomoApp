@@ -42,18 +42,19 @@ export default function VendedorPage() {
 
 
   const handleEscaneo = async (codigo: string) => {
-    setEscaneando(false)
-    // Buscar el pedido por código de recolección
     const pedido = data?.pedidos.find(p => p.codigo === codigo)
     if (!pedido) {
       showToast('❌ Código no encontrado en pedidos activos')
+      setEscaneando(false)
       return
     }
     if (pedido.estado !== 'Pendiente') {
       showToast(`ℹ️ Este pedido ya está: ${pedido.estado}`)
+      setEscaneando(false)
       return
     }
     await handleEstado(pedido.id_pedido, 'Entregado')
+    setEscaneando(false)
   }
 
   const showToast = (msg: string) => {
