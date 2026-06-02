@@ -92,6 +92,12 @@ export default function MapComponent({ ofertas, onOfertaClick }: MapComponentPro
       marker.on('click', () => onOfertaClick?.(o))
       markersRef.current.push(marker)
     })
+
+    // Ajustar zoom para mostrar todos los pins
+    if (markersRef.current.length > 0) {
+      const group = L.featureGroup(markersRef.current)
+      mapRef.current.fitBounds(group.getBounds().pad(0.2))
+    }
   }, [ofertas, onOfertaClick, geoListo])
 
   return (
