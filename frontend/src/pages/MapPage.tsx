@@ -63,10 +63,12 @@ export default function MapPage() {
   useEffect(() => {
     const cargar = async () => {
       try {
+        console.log('[Mapa] Iniciando carga...')
         const ofertas = await getOfertas()
         console.log('[Mapa] Ofertas recibidas:', ofertas.length, ofertas)
 
         if (ofertas.length === 0) {
+          console.log('[Mapa] Sin ofertas, saliendo')
           setLoading(false)
           return
         }
@@ -120,7 +122,8 @@ export default function MapPage() {
           setGeocodificando(false)
           setLoading(false)
         }
-      } catch {
+      } catch (e) {
+        console.log('[Mapa] ERROR:', e)
         setLoading(false)
         setGeocodificando(false)
       }
