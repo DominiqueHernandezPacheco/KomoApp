@@ -53,7 +53,7 @@ export default function MapPage() {
   const { usuario } = useAuth()
   const [ofertasMapa, setOfertasMapa] = useState<OfertaMapa[]>([])
   const [filtradas, setFiltradas] = useState<OfertaMapa[]>([])
-  const [maxDistancia, setMaxDistancia] = useState(50)
+  const [maxDistancia, setMaxDistancia] = useState(5000)
   const [selectedOferta, setSelectedOferta] = useState<OfertaMapa | null>(null)
   const [loading, setLoading] = useState(true)
   const [reservando, setReservando] = useState(false)
@@ -97,13 +97,13 @@ export default function MapPage() {
                 distancia: calcularDistancia(coords.latitude, coords.longitude, o.lat, o.lng),
               }))
               setOfertasMapa(conDist)
-              setFiltradas(conDist.filter(o => o.distancia! <= maxDistancia))
+              setFiltradas(conDist) // Mostrar todas, el slider filtra después
               setGeocodificando(false)
               setLoading(false)
             },
             () => {
               setOfertasMapa(conCoords)
-              setFiltradas(conCoords)
+              setFiltradas(conCoords) // Sin geolocalización: mostrar todas
               setGeocodificando(false)
               setLoading(false)
             }
