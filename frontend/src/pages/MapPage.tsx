@@ -13,14 +13,28 @@ interface OfertaMapa extends Oferta {
 }
 
 async function geocodificar(direccion: string): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(direccion)}&format=json&limit=1`
-    const res = await fetch(url, { headers: { 'Accept-Language': 'es' } })
-    const data = await res.json()
-    if (data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
-    }
-  } catch { /* dirección no geocodificable */ }
+  // Intenta con versiones progresivamente más simples de la dirección
+  const intentos = [
+    direccion,
+    // Quita el CP y abrevia estado: "Av. Central 27, San Francisco de Campeche"
+    direccion.replace(/,?\s*\d{5}\s*/g, ', ').replace(/\s*,\s*Camp\.?\s*$/i, '').trim(),
+    // Solo ciudad y estado: última parte después de la última coma con número
+    direccion.split(',').slice(-2).join(',').trim(),
+    // Solo la ciudad
+    direccion.split(',').at(-1)?.trim() ?? '',
+  ].filter(Boolean)
+
+  for (const q of intentos) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=mx`
+      const res = await fetch(url, { headers: { 'Accept-Language': 'es' } })
+      const data = await res.json()
+      if (data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+      }
+      await new Promise(r => setTimeout(r, 250))
+    } catch { /* continuar con el siguiente intento */ }
+  }
   return null
 }
 
