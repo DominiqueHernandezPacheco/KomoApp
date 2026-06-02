@@ -44,10 +44,13 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    include: ['recharts'],
+  },
   server: {
     proxy: {
       '/api': {
-        target: 'https://komo-backend.onrender.com', // ⬅️ Tu nueva URL
+        target: 'https://komo-backend.onrender.com',
         changeOrigin: true,
       },
     },
