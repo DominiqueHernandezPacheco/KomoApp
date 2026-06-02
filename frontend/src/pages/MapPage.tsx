@@ -64,6 +64,8 @@ export default function MapPage() {
     const cargar = async () => {
       try {
         const ofertas = await getOfertas()
+        console.log('[Mapa] Ofertas recibidas:', ofertas.length, ofertas)
+
         if (ofertas.length === 0) {
           setLoading(false)
           return
@@ -74,10 +76,13 @@ export default function MapPage() {
         // Agrupar por dirección para no geocodificar duplicados
         const cacheCoordenadas: Record<string, { lat: number; lng: number } | null> = {}
         const direccionesUnicas = [...new Set(ofertas.map(o => o.direccion))]
+        console.log('[Mapa] Direcciones a geocodificar:', direccionesUnicas)
 
         for (const dir of direccionesUnicas) {
-          cacheCoordenadas[dir] = await geocodificar(dir)
-          await new Promise(r => setTimeout(r, 250)) // Respetar límite Nominatim
+          const coords = await geocodificar(dir)
+          cacheCoordenadas[dir] = coords
+          console.log('[Mapa] Geocodificado:', dir, '→', coords)
+          await new Promise(r => setTimeout(r, 250))
         }
 
         const conCoords: OfertaMapa[] = ofertas
@@ -87,6 +92,7 @@ export default function MapPage() {
             lat: cacheCoordenadas[o.direccion]!.lat,
             lng: cacheCoordenadas[o.direccion]!.lng,
           }))
+        console.log('[Mapa] Ofertas con coordenadas:', conCoords.length)
 
         // Calcular distancia si hay geolocalización
         if (navigator.geolocation) {
