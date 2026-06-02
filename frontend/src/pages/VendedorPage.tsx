@@ -5,6 +5,7 @@ import { getDashboardVendedor, actualizarEstadoPedido } from '../api'
 import BottomNav from '../components/BottomNav'
 import LectorQR from '../components/LectorQR'
 import type { DashboardVendedor } from '../types'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 export default function VendedorPage() {
   const { usuario } = useAuth()
@@ -64,6 +65,15 @@ export default function VendedorPage() {
   const pendientes = data?.pedidos.filter(p => p.estado === 'Pendiente') ?? []
   const historial  = data?.pedidos.filter(p => p.estado !== 'Pendiente') ?? []
 
+  const entregados  = data?.pedidos.filter(p => p.estado === 'Entregado').length ?? 0
+  const cancelados  = data?.pedidos.filter(p => p.estado === 'Cancelado').length ?? 0
+  const chartData = [
+    { name: 'Entregados', value: entregados },
+    { name: 'Pendientes', value: pendientes.length },
+    { name: 'Cancelados', value: cancelados },
+  ].filter(d => d.value > 0)
+  const CHART_COLORS = ['#16a34a', '#f59e0b', '#ef4444']
+
   return (
     <div className="app-shell">
       <header className="bg-green-600 text-white px-4 pt-12 pb-5">
@@ -109,6 +119,34 @@ export default function VendedorPage() {
           </div>
         ) : (
           <>
+            {/* Gráfica de estado de pedidos */}
+            {chartData.length > 0 && (
+              <section>
+                <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  Distribución de pedidos
+                </h2>
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%" cy="50%"
+                        innerRadius={50} outerRadius={80}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {chartData.map((_, i) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v) => [`${v} pedidos`]} />
+                      <Legend iconType="circle" iconSize={8} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+            )}
+
             {/* Pendientes */}
             <section>
               <div className="flex items-center justify-between mb-2">

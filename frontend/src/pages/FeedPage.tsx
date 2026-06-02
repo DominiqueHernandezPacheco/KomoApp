@@ -7,12 +7,14 @@ import BottomNav from '../components/BottomNav'
 import type { Oferta } from '../types'
 
 const CATEGORIAS = ['Todas', 'Panadería', 'Café', 'Sushi', 'Postre', 'Comida']
+type Orden = 'recientes' | 'precio_asc' | 'precio_desc' | 'disponibles'
 
 export default function FeedPage() {
   const { usuario } = useAuth()
   const [ofertas, setOfertas]     = useState<Oferta[]>([])
   const [filtro, setFiltro]       = useState('Todas')
   const [busqueda, setBusqueda]   = useState('')
+  const [orden, setOrden]         = useState<Orden>('recientes')
   const [cargando, setCargando]   = useState(true)
   const [reservando, setReservando] = useState<number | null>(null)
   const [toast, setToast]         = useState('')
@@ -37,12 +39,19 @@ const cargar = async (mostrarCargando = false) => {
   // El autorefresco ahora será silencioso (sin spinner)
   useAutoRefresh(() => cargar(false), 30000) // Lo subí a 30 segundos
 
-  const mostrar = ofertas.filter(o => {
-    const matchFiltro = filtro === 'Todas' || o.categoria.toLowerCase().includes(filtro.toLowerCase())
-    const matchBusqueda = o.descripcion.toLowerCase().includes(busqueda.toLowerCase()) ||
-                          o.restaurante.toLowerCase().includes(busqueda.toLowerCase())
-    return matchFiltro && matchBusqueda
-  })
+  const mostrar = ofertas
+    .filter(o => {
+      const matchFiltro = filtro === 'Todas' || o.categoria.toLowerCase().includes(filtro.toLowerCase())
+      const matchBusqueda = o.descripcion.toLowerCase().includes(busqueda.toLowerCase()) ||
+                            o.restaurante.toLowerCase().includes(busqueda.toLowerCase())
+      return matchFiltro && matchBusqueda
+    })
+    .sort((a, b) => {
+      if (orden === 'precio_asc')   return a.precio - b.precio
+      if (orden === 'precio_desc')  return b.precio - a.precio
+      if (orden === 'disponibles')  return b.cantidad_disponible - a.cantidad_disponible
+      return b.id_oferta - a.id_oferta // recientes
+    })
 
   const handleReservar = async (oferta_id: number) => {
     if (!usuario) return
@@ -102,6 +111,22 @@ const cargar = async (mostrarCargando = false) => {
             {cat}
           </button>
         ))}
+      </div>
+
+      {/* Ordenamiento */}
+      <div className="px-4 pb-1 flex items-center gap-2">
+        <span className="text-xs text-gray-400 font-medium shrink-0">Ordenar:</span>
+        <select
+          value={orden}
+          onChange={e => setOrden(e.target.value as Orden)}
+          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-600 outline-none focus:border-green-500"
+        >
+          <option value="recientes">Más recientes</option>
+          <option value="precio_asc">Precio: menor a mayor</option>
+          <option value="precio_desc">Precio: mayor a menor</option>
+          <option value="disponibles">Mayor disponibilidad</option>
+        </select>
+        <span className="text-xs text-gray-400 ml-auto">{mostrar.length} resultados</span>
       </div>
 
       {/* Lista */}

@@ -15,19 +15,37 @@ export default function PublicarPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+  const [errores, setErrores] = useState<Record<string, string>>({})
 
-  const handle = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  const handle = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setForm(f => ({ ...f, [name]: value }))
+    setErrores(prev => ({ ...prev, [name]: '' }))
+  }
+
+  const validar = () => {
+    const nuevos: Record<string, string> = {}
+    if (!form.descripcion.trim() || form.descripcion.trim().length < 3)
+      nuevos.descripcion = 'Escribe al menos 3 caracteres'
+    const precio = parseFloat(form.precio)
+    if (!form.precio || isNaN(precio) || precio <= 0)
+      nuevos.precio = 'El precio debe ser mayor a $0'
+    const cantidad = parseInt(form.cantidad)
+    if (!form.cantidad || isNaN(cantidad) || cantidad < 1)
+      nuevos.cantidad = 'La cantidad mínima es 1'
+    setErrores(nuevos)
+    return Object.keys(nuevos).length === 0
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!usuario) return
+    if (!usuario || !validar()) return
     setLoading(true); setError('')
     try {
       await publicarOferta({
         restaurante_id: usuario.id,
-        descripcion:    form.descripcion,
-        info_detallada: form.info_detallada,
+        descripcion:    form.descripcion.trim(),
+        info_detallada: form.info_detallada.trim(),
         precio:         parseFloat(form.precio),
         cantidad:       parseInt(form.cantidad),
         categoria:      form.categoria,
@@ -59,28 +77,29 @@ export default function PublicarPage() {
           <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>
         )}
 
-        <Field label="Nombre del producto *">
-          <input name="descripcion" required value={form.descripcion} onChange={handle}
+        <Field label="Nombre del producto *" error={errores.descripcion}>
+          <input name="descripcion" value={form.descripcion} onChange={handle}
             placeholder="Ej: Pan dulce surtido, Sushi del día..."
-            className="input-base" />
+            className={`input-base ${errores.descripcion ? 'border-red-400 focus:border-red-500' : ''}`} />
         </Field>
 
-        <Field label="Descripción detallada">
+        <Field label={`Descripción detallada ${form.info_detallada.length > 0 ? `(${form.info_detallada.length}/300)` : ''}`}>
           <textarea name="info_detallada" value={form.info_detallada} onChange={handle}
             placeholder="Ingredientes, presentación, etc."
+            maxLength={300}
             rows={3} className="input-base resize-none" />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Precio (MXN) *">
-            <input name="precio" type="number" required min="1" step="0.50"
+          <Field label="Precio (MXN) *" error={errores.precio}>
+            <input name="precio" type="number" min="0.50" step="0.50"
               value={form.precio} onChange={handle}
-              placeholder="0.00" className="input-base" />
+              placeholder="0.00" className={`input-base ${errores.precio ? 'border-red-400' : ''}`} />
           </Field>
-          <Field label="Cantidad *">
-            <input name="cantidad" type="number" required min="1"
+          <Field label="Cantidad *" error={errores.cantidad}>
+            <input name="cantidad" type="number" min="1"
               value={form.cantidad} onChange={handle}
-              placeholder="0" className="input-base" />
+              placeholder="0" className={`input-base ${errores.cantidad ? 'border-red-400' : ''}`} />
           </Field>
         </div>
 
@@ -134,11 +153,12 @@ export default function PublicarPage() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
   return (
     <div>
       <label className="block text-xs font-semibold text-gray-500 mb-1.5">{label}</label>
       {children}
+      {error && <p className="text-xs text-red-500 mt-1 font-medium">⚠ {error}</p>}
     </div>
   )
 }
